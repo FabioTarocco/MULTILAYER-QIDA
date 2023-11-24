@@ -80,7 +80,7 @@ def extract_N_block(paramslist,ent,depth,offset):
     
     relevant = []
     for s in sliced:
-        relevant.append(s[:2:])
+        relevant.append(s[2:4:])
     if relevant == []:
         return [],  []
     else:
@@ -106,7 +106,8 @@ ENTANGLER_MAP_F = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
                    [5,6],[5,7],[5,8],
                    [6,7],[6,8],
                    [7,8]]
-ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3]]
+#ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3]]
+ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[7,8],[6,7],[3,6]]
 
 Nx = 3
 Ny = 3
@@ -132,7 +133,7 @@ for i in range(0,Nx*Ny):
 
 print(qc.draw())
 print(qc.num_parameters)
-p = pd.read_pickle("./pickle/vqe2_3x3_1A_SU4.pkl")[0]
+p = pd.read_pickle("./pickle/vqe2_3x3_1A+_SU4.pkl")[0]
 print(qc.assign_parameters(p["Optimal_params"]))
 
 x_,y_ = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_A, 1,0)
