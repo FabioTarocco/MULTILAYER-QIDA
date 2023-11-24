@@ -1,0 +1,40 @@
+Hi,
+
+I'm using the method that we discussed in [this topic](http
+
+s://itensor.discourse.group/t/mutual-information-matrix/1167) to compute the Mutual Information Maps.
+
+I've checked the result obtained by the snippet of code that I've implemented, with the GS obtained by ED of the Heisenberg Model Hamiltonian for a 3x3 lattice.
+The results are the same.
+
+Now, I've moved on the part on which I am more interested, which is Molecular Hamiltonian.
+Using ITensorChemistry, I've computed some GS of some molecules (H2, H2O, etc) and using the Mutual Information snippet I've obtained the Mutual Information Maps.
+
+![H2O_sto-3g|690x492, 50%](upload://fLG5KzjPJMUTIbKQ5ng7B638gbE.png)
+
+This are obtained with a MPS in which the sites are Electron, but I would like to have fermionic sites, so instead of N spin orbitals, I'd like to have the MPS as 2N spatial orbitals.
+
+I was looking at the source code and found that I can pass the sitetype = "Fermion"/"Qubit" and obtained the desired MPS as fermions.
+
+But then, When I compute the GS with DMRG, the bond dimension of the resulting MPS is 1 and the Mutual Information Map is NaN everywhere.
+
+If you have not already done so, please take a look at our [posting guidelines](https://itensor.discourse.group/t/welcome-to-itensor-discourse/7) before posting your question, this will make it easier for the ITensor developers or other members of the community to respond to your question!
+
+- **Please do not attach a screenshot of your code, it makes it much more difficult for us to help you since then we cannot easily run your code to reproduce your issue. Instead, copy the text of your code directly into your post and format it properly so that we can easily read it.**
+- **We highly recommend using the Julia version of ITensor. It has the same or better performance compared to the C++ version, many more features, and is much more actively developed.**
+
+If you are including code in your question or comment, please put it in a code block as follows:
+```julia
+using ITensors
+
+i = Index(2)
+j = Index(2)
+A = randomITensor(i, j)
+```
+or inline as `randomITensor(i, j)`.
+
+If you are using equations in your question or comment, please put it in an equation block with $\LaTeX$ formatting as follows:
+$$
+\langle\psi | \hat{H} | \psi\rangle
+$$
+or inline as $S=\frac{1}{2}$.
