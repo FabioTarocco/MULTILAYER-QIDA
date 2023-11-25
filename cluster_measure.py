@@ -46,11 +46,11 @@ def rz(theta):
     b = np.exp(-1J*theta/2)
     return np.array([[a,0],[0,b]])
    
-def compose_N_block(t1, t2,t3):
-    return CNOT2 @np.kron(rz(t1),I)@ np.kron(I, ry(t2)) @ CNOT1 @ np.kron(I, ry(t3)) @ CNOT2
+def compose_N_block(t1,t2):
+    return CNOT2 @ np.kron(I, ry(t1)) @ CNOT1 @ np.kron(I, ry(t2)) @ CNOT2
 
 def compose_su4(params):
-    return np.kron(ry(params[0]),I) @ np.kron(I, ry(params[1])) @ compose_N_block(params[2], params[3],params[4]) @ np.kron(ry(params[5]),I) @ np.kron(I, ry(params[6]))
+    return np.kron(ry(params[0]),I) @ np.kron(I, ry(params[1])) @ compose_N_block(params[2],params[3]) @ np.kron(ry(params[4]),I) @ np.kron(I, ry(params[5]))
 
 def measure(a):
     all_diff = []
@@ -65,7 +65,7 @@ def distance (x):
 
 def distance_su4(x):
     r = compose_su4(x)
-    return np.real(LA.norm(SWAP - r))
+    return np.real(LA.norm(CH1 - r))
 
 
 convergence = []
@@ -79,7 +79,7 @@ def optimize():
         parameters.append(x_params)
 
     res = minimize(fun = distance_su4, 
-                   x0 = np.random.uniform(size = 7, low=-np.pi, high=np.pi),
+                   x0 = np.random.uniform(size = 6, low=-np.pi, high=np.pi),
                    callback=callback,
                    tol=1e-6,
                    method='BFGS'
@@ -90,7 +90,7 @@ def optimize():
 par, dist = optimize()
 print(par, dist)
 
-print(np.round(compose_su4(par)))
+print(np.round(compose_su4(par),3))
 
 #print("\n")
 #print(np.round(compose_N_block(np.mod(np.pi,2*np.pi),np.mod(0, 2*np.pi))))

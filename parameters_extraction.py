@@ -108,21 +108,21 @@ ENTANGLER_MAP_F = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
                    [7,8]]
 #ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[8,7],[7,6],[6,3]]
 ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[7,8],[6,7],[3,6]]
-
-Nx = 3
-Ny = 3
+ENTANGLER_MAP_3x4= [[0,1],[2,3],[8,9],[10,11]]
+Nx  = 3
+Ny = 4
 qc = QuantumCircuit(Nx*Ny)
 M = 10
 
 for d in range(0,1):
     for i in range(0,Nx*Ny):
-        if i in(set(np.array(ENTANGLER_MAP_A).flatten())):
+        if i in(set(np.array(ENTANGLER_MAP_3x4).flatten())):
             count = count + 1
             qc.rz(Parameter(parameterBitString(M,count)),i)
     
     qc.barrier()
 
-    for a,b in ENTANGLER_MAP_A:
+    for a,b in ENTANGLER_MAP_3x4:
 
         count = count + 1
         count = general_SU4(count, qc, a, b,M)
@@ -133,10 +133,10 @@ for i in range(0,Nx*Ny):
 
 print(qc.draw())
 print(qc.num_parameters)
-p = pd.read_pickle("./pickle/vqe2_3x3_1A+_SU4.pkl")[0]
+p = pd.read_pickle("./pickle/2_3x4_1ASU4.pkl")[0]
 print(qc.assign_parameters(p["Optimal_params"]))
 
-x_,y_ = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_A, 1,0)
+x_,y_ = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_3x4, 1,0)
 print(x_,y_)
 """
 import random
