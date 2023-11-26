@@ -4,6 +4,7 @@ from qiskit.quantum_info import Statevector
 from qiskit.circuit.quantumcircuit import Parameter, QuantumCircuit
 import pandas as pd
 import sys
+from pprint import pprint
 if len(sys.argv) ==1:
     flag_plot = False
 else:
@@ -77,7 +78,7 @@ def extract_N_block(paramslist,ent,depth,offset):
                 sliced.append(paramslist[:6:])
             paramslist = paramslist[6::]
         paramslist = paramslist[n::]
-    
+    print(sliced)
     relevant = []
     for s in sliced:
         relevant.append(s[2:4:])
@@ -110,19 +111,19 @@ ENTANGLER_MAP_F = [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
 ENTANGLER_MAP_A= [[0,1],[1,2],[2,5],[5,8],[7,8],[6,7],[3,6]]
 ENTANGLER_MAP_3x4= [[0,1],[2,3],[8,9],[10,11]]
 Nx  = 3
-Ny = 4
+Ny = 3
 qc = QuantumCircuit(Nx*Ny)
 M = 10
 
 for d in range(0,1):
     for i in range(0,Nx*Ny):
-        if i in(set(np.array(ENTANGLER_MAP_3x4).flatten())):
+        if i in(set(np.array(ENTANGLER_MAP_A).flatten())):
             count = count + 1
             qc.rz(Parameter(parameterBitString(M,count)),i)
     
     qc.barrier()
 
-    for a,b in ENTANGLER_MAP_3x4:
+    for a,b in ENTANGLER_MAP_A:
 
         count = count + 1
         count = general_SU4(count, qc, a, b,M)
@@ -133,11 +134,10 @@ for i in range(0,Nx*Ny):
 
 print(qc.draw())
 print(qc.num_parameters)
-p = pd.read_pickle("./pickle/2_3x4_1ASU4.pkl")[0]
+p = pd.read_pickle("./pickle/vqe1_3x3_1A+_SU4.pkl")[0]
 print(qc.assign_parameters(p["Optimal_params"]))
-
-x_,y_ = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_3x4, 1,0)
-print(x_,y_)
+x_,y_ = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_A, 1,0)
+#print(x_,y_)
 """
 import random
 def randomColor():
