@@ -79,7 +79,6 @@ def extract_N_block(paramslist,ent,depth,offset):
             paramslist = paramslist[6::]
         paramslist = paramslist[n::]
     
-    print(sliced)
     relevant = []
     for s in sliced:
         relevant.append(s[2:4:])
@@ -89,7 +88,7 @@ def extract_N_block(paramslist,ent,depth,offset):
         relevant = list(np.concatenate(relevant).flat)
         x_ = relevant[::2]
         y_ = relevant[1::2]
-        return x_,y_, np.mod(sliced, 2*np.pi)
+        return x_,y_, np.mod(sliced, 2*np.pi), sliced
     
 
 count = -1
@@ -137,8 +136,9 @@ print(qc.draw())
 print(qc.num_parameters)
 p = pd.read_pickle("./pickle/vqe2_3x3_1A+_SU4.pkl")[0]
 print(qc.assign_parameters(p["Optimal_params"]))
-x_,y_, sliced = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_A, 1,0)
+x_,y_, mod_sliced, sliced = extract_N_block(p["Optimal_params"],ENTANGLER_MAP_A, 1,0)
 print(sliced)
+print(mod_sliced)
 #print(x_,y_)
 """
 import random

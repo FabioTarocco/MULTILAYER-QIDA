@@ -1,6 +1,7 @@
 
 import numpy as np
 from qiskit.quantum_info import Statevector
+import qiskit.quantum_info as qi
 from qiskit.circuit.quantumcircuit import Parameter, QuantumCircuit, Gate
 
 class SU4(Gate):
@@ -69,36 +70,35 @@ class real_SU4(Gate):
         self.definition = qc
 
     
-    def compose_su4(self,params):
+    def compose_real_su4(self,params):
 
-        CNOT1 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
-        CNOT2 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
+        CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
+        CNOT1 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
 
         I = np.eye(2)
-        def ry(theta):
+        def Ry(theta):
             a = np.cos(theta/2)
             b = np.sin(theta/2)
             return np.array([[a,-b],[b,a]])
 
         def compose_N_block_real(x):
-            return CNOT2 @ np.kron(I, ry(x[0])) @ CNOT1 @ np.kron(I, ry(x[1])) @ CNOT2
-
-        return np.kron(ry(params[0]),I) @ np.kron(I, ry(params[1])) @ compose_N_block_real([params[2], params[3]]) @ np.kron(ry(params[4]),I) @ np.kron(I, ry(params[5]))
+            return CNOT2# @ np.kron(Ry(x[0]), I) @ CNOT1 @ np.kron(Ry(x[1]),I) @ CNOT2
+        #print(np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0])) @ compose_N_block_real([params[2], params[3]]) @ np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4])))
+        return np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))@CNOT2 @ np.kron(Ry(params[3]),I)@CNOT1@np.kron(Ry(params[2]),I) @ CNOT2 @ np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0]))#compose_N_block_real([0,0])#[params[2], params[3]]) @ np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))
 
     def to_matrix(self):
         thetas = []
         for i in range(0,6):
-            thetas.append(float(self.param[i]))
-        return np.array(self.compose_su4(thetas))
+            thetas.append(float(self.params[i]))
+        return np.array(self.compose_real_su4(thetas))
 
 def real_su4_layer(counter, qc, ent_map, M):
     params = []
     for c,t in ent_map:
         for i in range(0,6):
             counter = counter + 1
-            params.append(Parameter(parameterBitString(M,counter)))
-            print(counter)
-        qc.append(particle_conserving_singleU(params), [c, t])
+            params.append(Parameter(parameterBitString(M, counter)))
+        qc.append(real_SU4(params), [c, t])
         qc.barrier()
         params = []
     return counter
@@ -139,7 +139,6 @@ def parity_conserving_layer(counter, qc, ent_map, M):
         theta_2 = Parameter(parameterBitString(M,counter))
         params =  [theta_1, theta_2]
         qc.append(particle_conserving_singleU(params), [c, t])
-        print(counter)
         qc.barrier()
     return counter
     
@@ -180,7 +179,6 @@ def particle_conserving_layer(counter, qc, ent_map, M):
         theta_2 = Parameter(parameterBitString(M,counter))
         params =  [theta_1, theta_2]
         qc.append(particle_conserving_singleU(params), [c, t])
-        print(counter)
         qc.barrier()
     return counter
      
@@ -226,40 +224,44 @@ def general_SU4(counter, qc, q0,q1,M):
     return counter
 
 
- 
+
+params = np.random.randint(size=6, low= -10, high=10)
 qc = QuantumCircuit(2)
 counter = -1
 ent = [[0,1]]
 M = 10
+
 general_SU4(counter=counter, qc=qc, q0=0,q1=1,M=10)
-print(qc.draw())
-
-params = [np.pi]*qc.num_parameters
+print(params)
 qc.assign_parameters(params, inplace=True)
+
+mat_qiskit = np.round(np.real(qi.Operator(qc)), 3)
 state = Statevector(qc)
 psi = np.array(state)
 
-print(state)
-print(np.real(psi.T@psi))
+#print(state)
+#print(np.real(psi.T@psi))
 
+print("\n\n")
 
-
-
-qc = QuantumCircuit(2)
+qc2 = QuantumCircuit(2)
 counter = -1
 ent = [[0,1]]
 M = 10
-counter = real_su4_layer(counter=counter,qc = qc,ent_map=ent, M=M )
-print(qc.draw())
-
-params = [np.pi]*qc.num_parameters
-qc.assign_parameters(params, inplace=True)
-state = Statevector(qc)
+counter = real_su4_layer(counter=counter,qc = qc2,ent_map=ent, M=M )
+mat_fabio = np.round(np.real(real_SU4(params).to_matrix()),3)
+qc2.assign_parameters(params, inplace=True)
+state = Statevector(qc2)
 psi = np.array(state)
+print(mat_qiskit)
+print("\n\n")
+print(mat_fabio)
+print("\n\n")
 
-print(state)
-print(np.real(psi.T@psi))
+#print(state)
+#print(np.real(psi.T@psi))
 
+print(np.array(mat_qiskit) == mat_fabio)
 """
 counter = -1
 
