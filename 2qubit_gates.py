@@ -81,9 +81,6 @@ class real_SU4(Gate):
             b = np.sin(theta/2)
             return np.array([[a,-b],[b,a]])
 
-        def compose_N_block_real(x):
-            return CNOT2# @ np.kron(Ry(x[0]), I) @ CNOT1 @ np.kron(Ry(x[1]),I) @ CNOT2
-        #print(np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0])) @ compose_N_block_real([params[2], params[3]]) @ np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4])))
         return np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))@CNOT2 @ np.kron(Ry(params[3]),I)@CNOT1@np.kron(Ry(params[2]),I) @ CNOT2 @ np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0]))#compose_N_block_real([0,0])#[params[2], params[3]]) @ np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))
 
     def to_matrix(self):
