@@ -17,43 +17,43 @@ class SU4(Gate):
     
     def compose_su4(self,params):
 
-        CNOT1 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
-        CNOT2 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
+        CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
+        CNOT1 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
 
         I = np.eye(2)
         def ry(theta):
             a = np.cos(theta/2)
             b = np.sin(theta/2)
-            return np.array([[a,b],[-b,a]])
+            return np.array([[a,-b],[b,a]])
 
         def rz(theta):
-            a = np.exp(1j*theta/2)
-            b = np.exp(-1J*theta/2)
+            a = np.exp(-1j*theta/2)
+            b = np.exp(1J*theta/2)
             return np.array([[a,0],[0,b]])
 
-        def compose_N_block(x):
-            return CNOT2 @np.kron(self.rz(x[0]),I) @ np.kron(I, ry(x[1])) @ CNOT1 @ np.kron(I, ry(x[2])) @ CNOT2
+        def swap_block(x):
+            return CNOT2 @ np.kron(ry(x[2]),I) @ CNOT1 @ np.kron(ry(x[1]), I) @ np.kron(I, rz(x[0])) @ CNOT2
 
         #COMPOSE GENERAL SU(2) FROM PARAMETERS t1, t2 AND t3
         def general_su2(x):
-            return np.kron(rz(x[0]),I) @ np.kron(ry(x[1]),I) @ np.kron(ry(x[2]),I)
+            return np.kron(rz(x[5])@ry(x[4])@rz(x[3]),I) @ np.kron(I, rz(x[2])@ry(x[1])@rz(x[0]))
         
-        return np.kron(general_su2(params[:3:]),I) @ np.kron(I,general_su2(params[3:6:])) @ compose_N_block(params[6:9:]) @ np.kron(general_su2(params[9:12:]),I) @ np.kron(I,general_su2(params[12:15:]))
+        return general_su2(params[9:15:]) @ swap_block(params[6:9:]) @ general_su2(params[:6:])
+        #return np.kron(general_su2(params[:3:]),I) @ np.kron(I,general_su2(params[3:6:])) @ swap_block(params[6:9:]) @ np.kron(general_su2(params[9:12:]),I) @ np.kron(I,general_su2(params[12:15:]))
 
     def to_matrix(self):
         thetas = []
-        for i in range(0,16):
-            thetas.append(float(self.param[i]))
+        for i in range(0,15):
+            thetas.append(float(self.params[i]))
         return np.array(self.compose_su4(thetas))
 
 def su4_layer(counter, qc, ent_map, M):
     params = []
     for c,t in ent_map:
-        for i in range(0,16):
+        for _ in range(0,15):
             counter = counter + 1
             params.append(Parameter(parameterBitString(M,counter)))
-            print(counter)
-        qc.append(particle_conserving_singleU(params), [c, t])
+        qc.append(SU4(params), [c, t])
         qc.barrier()
         params = []
     return counter
@@ -80,8 +80,16 @@ class real_SU4(Gate):
             a = np.cos(theta/2)
             b = np.sin(theta/2)
             return np.array([[a,-b],[b,a]])
+        
+        def su_2(x):
+            return np.kron(Ry(x[1]),I) @ np.kron(I, Ry(x[0]))
+        
+        def swap_block(x):
+            return CNOT2 @ np.kron(Ry(x[1]),I) @ CNOT1 @ np.kron(Ry(x[0]), I) @ CNOT2
+        
+        return su_2([params[4],params[5]]) @ swap_block([params[2], params[3]]) @ su_2([params[0], params[1]])
 
-        return np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))@CNOT2 @ np.kron(Ry(params[3]),I)@CNOT1@np.kron(Ry(params[2]),I) @ CNOT2 @ np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0]))#compose_N_block_real([0,0])#[params[2], params[3]]) @ np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))
+        #return np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))@ CNOT2 @ np.kron(Ry(params[3]),I)@CNOT1@np.kron(Ry(params[2]),I) @ CNOT2 @ np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0]))
 
     def to_matrix(self):
         thetas = []
@@ -186,26 +194,24 @@ def parameterBitString(M,i):
 
 def general_SU4(counter, qc, q0,q1,M):
     def add_single_SU2 (counter, qc,q, M):
-
-
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
         counter = counter + 1
         qc.ry(Parameter(parameterBitString(M,counter)),q)
-
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
         return counter
 
 
     def add_N_block(counter, qc, q0,q1, M):
         qc.cx(q1, q0)
-        
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q0)
         counter = counter + 1
         qc.ry(Parameter(parameterBitString(M,counter)),q1)
-
-
         qc.cx(q0, q1)
-        
         counter = counter + 1
         qc.ry(Parameter(parameterBitString(M,counter)),q1)
-        
         qc.cx(q1, q0)
 
         return counter
@@ -220,9 +226,56 @@ def general_SU4(counter, qc, q0,q1,M):
     qc.barrier()
     return counter
 
+def general_real_SU4(counter, qc, q0,q1,M):
+    def add_single_SU2 (counter, qc,q, M):
+        counter = counter + 1
+        qc.ry(Parameter(parameterBitString(M,counter)),q)
+        return counter
+    
+    def add_N_block(counter, qc, q0,q1, M):
+        qc.cx(q1, q0)
+        counter = counter + 1
+        qc.ry(Parameter(parameterBitString(M,counter)),q1)
+        qc.cx(q0, q1)
+        counter = counter + 1
+        qc.ry(Parameter(parameterBitString(M,counter)),q1)
+        qc.cx(q1, q0)
+        return counter
+
+    counter = add_single_SU2(counter, qc, q0, M)
+    counter = add_single_SU2(counter, qc, q1, M)
+    qc.barrier()
+    counter = add_N_block(counter, qc, q0,q1, M)
+    qc.barrier()
+    counter = add_single_SU2(counter, qc, q0, M)
+    counter = add_single_SU2(counter, qc, q1, M)
+    qc.barrier()
+    return counter
+
+def Orth4(counter, qc, q0,q1,M):
+    def add_single_SU2 (counter, qc,q, M):
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
+        counter = counter + 1
+        qc.ry(Parameter(parameterBitString(M,counter)),q)
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
+        return counter
+    
+    qc.s(q0)
+    qc.s(q1)
+    qc.ry(np.pi/2,q1)
+    qc.cx(q1,q0)
+    counter = add_single_SU2(counter, qc, q0, M)
+    counter = add_single_SU2(counter, qc, q1, M )
+    qc.cx(q1,q0)
+    qc.ry(-np.pi/2,q1)
+    qc.sdg(q0)
+    qc.sdg(q1)
+    return counter
 
 
-params = np.random.randint(size=6, low= -10, high=10)
+params = np.random.randint(size=15, low= -np.pi, high=np.pi)
 qc = QuantumCircuit(2)
 counter = -1
 ent = [[0,1]]
@@ -232,7 +285,7 @@ general_SU4(counter=counter, qc=qc, q0=0,q1=1,M=10)
 print(params)
 qc.assign_parameters(params, inplace=True)
 
-mat_qiskit = np.round(np.real(qi.Operator(qc)), 3)
+mat_qiskit = np.array(qi.Operator(qc))
 state = Statevector(qc)
 psi = np.array(state)
 
@@ -245,8 +298,8 @@ qc2 = QuantumCircuit(2)
 counter = -1
 ent = [[0,1]]
 M = 10
-counter = real_su4_layer(counter=counter,qc = qc2,ent_map=ent, M=M )
-mat_fabio = np.round(np.real(real_SU4(params).to_matrix()),3)
+counter = su4_layer(counter=counter,qc = qc2, ent_map=ent, M=M )
+mat_fabio = SU4(params).to_matrix()
 qc2.assign_parameters(params, inplace=True)
 state = Statevector(qc2)
 psi = np.array(state)
@@ -255,10 +308,9 @@ print("\n\n")
 print(mat_fabio)
 print("\n\n")
 
-#print(state)
-#print(np.real(psi.T@psi))
+print(np.linalg.det(mat_fabio))
+print(np.linalg.det(mat_qiskit))
 
-print(np.array(mat_qiskit) == mat_fabio)
 """
 counter = -1
 
