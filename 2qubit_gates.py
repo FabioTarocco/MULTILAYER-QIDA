@@ -4,6 +4,58 @@ from qiskit.quantum_info import Statevector
 import qiskit.quantum_info as qi
 from qiskit.circuit.quantumcircuit import Parameter, QuantumCircuit, Gate
 
+
+class Orth4(Gate):
+
+    def __init__(self, parameters):
+        super().__init__('U', 2, parameters)
+        
+    def _u_gate(self):
+        qc = QuantumCircuit(2)
+        qc.unitary(self.to_matrix(), [0, 1])
+        self.definition = qc
+
+    
+    def compose_orth4(self,params):
+
+        CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
+        S = np.array([[1,0],[0,1.j]])
+        Sdag = np.array([[1,0],[0,-1j]])
+        
+        I = np.eye(2)
+
+        def ry(theta):
+            a = np.cos(theta/2)
+            b = np.sin(theta/2)
+            return np.array([[a,-b],[b,a]])
+
+        def rz(theta):
+            a = np.exp(-1.j*theta/2)
+            b = np.exp(1.j*theta/2)
+            return np.array([[a,0],[0,b]])
+        
+        def central_su2s(x):
+            return np.kron(rz(x[5])@ry(x[4])@rz(x[3]),I) @ np.kron(I, rz(x[2])@ry(x[1])@rz(x[0]))
+        
+        return np.kron(I, Sdag) @ np.kron(Sdag, I) @ np.kron(ry(-np.pi/2), I) @ CNOT2 @ central_su2s(params) @ CNOT2 @ np.kron(ry(np.pi/2), I) @ np.kron(S, I) @ np.kron(I, S)
+    
+    def to_matrix(self):
+        thetas = []
+        for i in range(0,6):
+            thetas.append(float(self.params[i]))
+        return np.array(self.compose_orth4(thetas))
+
+def orth4_layer(counter, qc, ent_map, M):
+    params = []
+    for c,t in ent_map:
+        for _ in range(0,6):
+            counter = counter + 1
+            params.append(Parameter(parameterBitString(M,counter)))
+        qc.append(Orth4(params), [c, t])
+        qc.barrier()
+        params = []
+    return counter
+
 class SU4(Gate):
 
     def __init__(self, parameters):
@@ -33,14 +85,11 @@ class SU4(Gate):
 
         def swap_block(x):
             return CNOT2 @ np.kron(ry(x[2]),I) @ CNOT1 @ np.kron(ry(x[1]), I) @ np.kron(I, rz(x[0])) @ CNOT2
-
-        #COMPOSE GENERAL SU(2) FROM PARAMETERS t1, t2 AND t3
+        
         def general_su2(x):
             return np.kron(rz(x[5])@ry(x[4])@rz(x[3]),I) @ np.kron(I, rz(x[2])@ry(x[1])@rz(x[0]))
         
         return general_su2(params[9:15:]) @ swap_block(params[6:9:]) @ general_su2(params[:6:])
-        #return np.kron(general_su2(params[:3:]),I) @ np.kron(I,general_su2(params[3:6:])) @ swap_block(params[6:9:]) @ np.kron(general_su2(params[9:12:]),I) @ np.kron(I,general_su2(params[12:15:]))
-
     def to_matrix(self):
         thetas = []
         for i in range(0,15):
@@ -252,7 +301,7 @@ def general_real_SU4(counter, qc, q0,q1,M):
     qc.barrier()
     return counter
 
-def Orth4(counter, qc, q0,q1,M):
+def general_orth4(counter, qc, q0,q1,M):
     def add_single_SU2 (counter, qc,q, M):
         counter = counter + 1
         qc.rz(Parameter(parameterBitString(M,counter)),q)
@@ -265,15 +314,52 @@ def Orth4(counter, qc, q0,q1,M):
     qc.s(q0)
     qc.s(q1)
     qc.ry(np.pi/2,q1)
+    qc.barrier()
     qc.cx(q1,q0)
     counter = add_single_SU2(counter, qc, q0, M)
     counter = add_single_SU2(counter, qc, q1, M )
     qc.cx(q1,q0)
+    qc.barrier()
+    qc.id(q0)
     qc.ry(-np.pi/2,q1)
     qc.sdg(q0)
     qc.sdg(q1)
     return counter
 
+
+
+
+
+params = np.random.randint(size=6, low= -np.pi, high=np.pi) 
+
+
+qc = QuantumCircuit(2)
+counter = -1
+ent = [[0,1]]
+M = 10
+
+general_orth4(counter=counter, qc=qc, q0=0,q1=1,M=10)
+print(qc.draw())
+print(params)
+qc.assign_parameters(params, inplace=True)
+
+mat_qiskit = np.array(qi.Operator(qc))
+state = Statevector(qc)
+psi = np.array(state)
+
+
+
+qc2 = QuantumCircuit(2)
+counter = -1
+ent = [[0,1]]
+M = 10
+mat_fabio = Orth4(params).to_matrix()
+
+print(np.round(mat_qiskit,4))
+print("\n\n")
+print(np.round(mat_fabio,4))
+print("\n\n")
+"""
 
 params = np.random.randint(size=15, low= -np.pi, high=np.pi)
 qc = QuantumCircuit(2)
@@ -311,7 +397,7 @@ print("\n\n")
 print(np.linalg.det(mat_fabio))
 print(np.linalg.det(mat_qiskit))
 
-"""
+
 counter = -1
 
 
