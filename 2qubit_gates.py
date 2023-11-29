@@ -372,7 +372,8 @@ ent = [[0,1]]
 M = 10
 
 general_SU4(counter=counter, qc=qc, q0=0,q1=1,M=10)
-print(qc.draw())
+print(qc.decompose().draw())
+print(qc.num_nonlocal_gates())
 
 print(params)
 qc.assign_parameters(params, inplace=True)
