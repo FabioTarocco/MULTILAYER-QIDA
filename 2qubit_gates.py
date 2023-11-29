@@ -5,7 +5,7 @@ import qiskit.quantum_info as qi
 from qiskit.circuit.quantumcircuit import Parameter, QuantumCircuit, Gate
 
 
-class Orth4(Gate):
+class SO4(Gate):
 
     def __init__(self, parameters):
         super().__init__('U', 2, parameters)
@@ -16,7 +16,7 @@ class Orth4(Gate):
         self.definition = qc
 
     
-    def compose_orth4(self,params):
+    def compose_SO4(self,params):
 
         CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
         S = np.array([[1,0],[0,1.j]])
@@ -34,29 +34,29 @@ class Orth4(Gate):
             b = np.exp(1.j*theta/2)
             return np.array([[a,0],[0,b]])
         
-        def central_su2s(x):
+        def central_SU2s(x):
             return np.kron(rz(x[5])@ry(x[4])@rz(x[3]),I) @ np.kron(I, rz(x[2])@ry(x[1])@rz(x[0]))
         
-        return np.kron(I, Sdag) @ np.kron(Sdag, I) @ np.kron(ry(-np.pi/2), I) @ CNOT2 @ central_su2s(params) @ CNOT2 @ np.kron(ry(np.pi/2), I) @ np.kron(S, I) @ np.kron(I, S)
+        return np.kron(I, Sdag) @ np.kron(Sdag, I) @ np.kron(ry(-np.pi/2), I) @ CNOT2 @ central_SU2s(params) @ CNOT2 @ np.kron(ry(np.pi/2), I) @ np.kron(S, I) @ np.kron(I, S)
     
     def to_matrix(self):
         thetas = []
         for i in range(0,6):
             thetas.append(float(self.params[i]))
-        return np.array(self.compose_orth4(thetas))
+        return np.array(self.compose_SO4(thetas))
 
-def orth4_layer(counter, qc, ent_map, M):
+def SO4_layer(counter, qc, ent_map, M):
     params = []
     for c,t in ent_map:
         for _ in range(0,6):
             counter = counter + 1
             params.append(Parameter(parameterBitString(M,counter)))
-        qc.append(Orth4(params), [c, t])
+        qc.append(SO4(params), [c, t])
         qc.barrier()
         params = []
     return counter
 
-class SU4(Gate):
+class U4(Gate):
 
     def __init__(self, parameters):
         super().__init__('U', 2, parameters)
@@ -67,7 +67,7 @@ class SU4(Gate):
         self.definition = qc
 
     
-    def compose_su4(self,params):
+    def compose_U4(self,params):
 
         CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
         CNOT1 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
@@ -86,29 +86,30 @@ class SU4(Gate):
         def swap_block(x):
             return CNOT2 @ np.kron(ry(x[2]),I) @ CNOT1 @ np.kron(ry(x[1]), I) @ np.kron(I, rz(x[0])) @ CNOT2
         
-        def general_su2(x):
+        def general_SU2(x):
             return np.kron(rz(x[5])@ry(x[4])@rz(x[3]),I) @ np.kron(I, rz(x[2])@ry(x[1])@rz(x[0]))
         
-        return general_su2(params[9:15:]) @ swap_block(params[6:9:]) @ general_su2(params[:6:])
+        return general_SU2(params[9:15:]) @ swap_block(params[6:9:]) @ general_SU2(params[:6:])
+    
     def to_matrix(self):
         thetas = []
         for i in range(0,15):
             thetas.append(float(self.params[i]))
-        return np.array(self.compose_su4(thetas))
+        return np.array(self.compose_U4(thetas))
 
-def su4_layer(counter, qc, ent_map, M):
+def U4_layer(counter, qc, ent_map, M):
     params = []
     for c,t in ent_map:
         for _ in range(0,15):
             counter = counter + 1
             params.append(Parameter(parameterBitString(M,counter)))
-        qc.append(SU4(params), [c, t])
+        qc.append(U4(params), [c, t])
         qc.barrier()
         params = []
     return counter
 
 
-class real_SU4(Gate):
+class cripple_U4(Gate):
 
     def __init__(self, parameters):
         super().__init__('U', 2, parameters)
@@ -119,7 +120,7 @@ class real_SU4(Gate):
         self.definition = qc
 
     
-    def compose_real_su4(self,params):
+    def compose_cripple_U4(self,params):
 
         CNOT2 = np.array([[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]])
         CNOT1 = np.array([[1,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]])
@@ -130,13 +131,13 @@ class real_SU4(Gate):
             b = np.sin(theta/2)
             return np.array([[a,-b],[b,a]])
         
-        def su_2(x):
+        def compose_SU2(x):
             return np.kron(Ry(x[1]),I) @ np.kron(I, Ry(x[0]))
         
         def swap_block(x):
             return CNOT2 @ np.kron(Ry(x[1]),I) @ CNOT1 @ np.kron(Ry(x[0]), I) @ CNOT2
         
-        return su_2([params[4],params[5]]) @ swap_block([params[2], params[3]]) @ su_2([params[0], params[1]])
+        return compose_SU2([params[4],params[5]]) @ swap_block([params[2], params[3]]) @ compose_SU2([params[0], params[1]])
 
         #return np.kron(Ry(params[5]),I) @ np.kron(I, Ry(params[4]))@ CNOT2 @ np.kron(Ry(params[3]),I)@CNOT1@np.kron(Ry(params[2]),I) @ CNOT2 @ np.kron(Ry(params[1]),I) @ np.kron(I, Ry(params[0]))
 
@@ -144,15 +145,15 @@ class real_SU4(Gate):
         thetas = []
         for i in range(0,6):
             thetas.append(float(self.params[i]))
-        return np.array(self.compose_real_su4(thetas))
+        return np.array(self.compose_cripple_U4(thetas))
 
-def real_su4_layer(counter, qc, ent_map, M):
+def cripple_U4_layer(counter, qc, ent_map, M):
     params = []
     for c,t in ent_map:
         for i in range(0,6):
             counter = counter + 1
             params.append(Parameter(parameterBitString(M, counter)))
-        qc.append(real_SU4(params), [c, t])
+        qc.append(cripple_U4(params), [c, t])
         qc.barrier()
         params = []
     return counter
@@ -240,8 +241,8 @@ def particle_conserving_layer(counter, qc, ent_map, M):
 def parameterBitString(M,i):
     return format(i,'b').zfill(M)
 
-
-def general_SU4(counter, qc, q0,q1,M):
+#U(4) 15 parametri 3 CNOTS
+def general_U4(counter, qc, q0,q1,M):
     def add_single_SU2 (counter, qc,q, M):
         counter = counter + 1
         qc.rz(Parameter(parameterBitString(M,counter)),q)
@@ -275,7 +276,8 @@ def general_SU4(counter, qc, q0,q1,M):
     qc.barrier()
     return counter
 
-def general_real_SU4(counter, qc, q0,q1,M):
+#Matrici U(4) storpie a 6 parametri 3 CNOTS
+def clipple_U4(counter, qc, q0,q1,M):
     def add_single_SU2 (counter, qc,q, M):
         counter = counter + 1
         qc.ry(Parameter(parameterBitString(M,counter)),q)
@@ -301,7 +303,8 @@ def general_real_SU4(counter, qc, q0,q1,M):
     qc.barrier()
     return counter
 
-def general_orth4(counter, qc, q0,q1,M):
+#Matrici SO(4) 6 parametri 2 CNOTs
+def general_SO4(counter, qc, q0,q1,M):
     def add_single_SU2 (counter, qc,q, M):
         counter = counter + 1
         qc.rz(Parameter(parameterBitString(M,counter)),q)
@@ -327,10 +330,40 @@ def general_orth4(counter, qc, q0,q1,M):
     return counter
 
 
+#Matrici SU(4) 15 parametri Entangling gate RXX, RYY e RZZ
+def general_SU4(counter, qc, q0,q1,M):
+    def add_single_SU2 (counter, qc,q, M):
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
+        counter = counter + 1
+        qc.ry(Parameter(parameterBitString(M,counter)),q)
+        counter = counter + 1
+        qc.rz(Parameter(parameterBitString(M,counter)),q)
+        return counter
+    
+    def heisenberg_interaction (counter, qc, q0,q1,M):
+        counter = counter + 1
+        qc.rxx(Parameter(parameterBitString(M,counter)), q0,q1)
+        counter = counter + 1
+        qc.ryy(Parameter(parameterBitString(M,counter)), q0,q1)
+        counter = counter + 1
+        qc.rzz(Parameter(parameterBitString(M,counter)), q0,q1)
+        return counter
+    
+    counter = add_single_SU2(counter, qc, q0, M)
+    counter = add_single_SU2(counter, qc, q1, M)
+    qc.barrier()
+    counter = heisenberg_interaction(counter, qc, q0,q1, M)
+    qc.barrier()
+    counter = add_single_SU2(counter, qc, q0, M)
+    counter = add_single_SU2(counter, qc, q1, M)
+
+    return counter
 
 
 
-params = np.random.randint(size=6, low= -np.pi, high=np.pi) 
+
+params = np.random.randint(size=15, low= -np.pi, high=np.pi) 
 
 
 qc = QuantumCircuit(2)
@@ -338,27 +371,28 @@ counter = -1
 ent = [[0,1]]
 M = 10
 
-general_orth4(counter=counter, qc=qc, q0=0,q1=1,M=10)
+general_SU4(counter=counter, qc=qc, q0=0,q1=1,M=10)
 print(qc.draw())
+
 print(params)
 qc.assign_parameters(params, inplace=True)
 
 mat_qiskit = np.array(qi.Operator(qc))
 state = Statevector(qc)
 psi = np.array(state)
-
-
-
+print(mat_qiskit @ mat_qiskit.conj().T)
+"""
 qc2 = QuantumCircuit(2)
+print
 counter = -1
 ent = [[0,1]]
 M = 10
 mat_fabio = Orth4(params).to_matrix()
-
 print(np.round(mat_qiskit,4))
 print("\n\n")
 print(np.round(mat_fabio,4))
 print("\n\n")
+"""
 """
 
 params = np.random.randint(size=15, low= -np.pi, high=np.pi)
@@ -367,7 +401,7 @@ counter = -1
 ent = [[0,1]]
 M = 10
 
-general_SU4(counter=counter, qc=qc, q0=0,q1=1,M=10)
+general_U4(counter=counter, qc=qc, q0=0,q1=1,M=10)
 print(params)
 qc.assign_parameters(params, inplace=True)
 
