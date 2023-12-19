@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 from qiskit.quantum_info.operators import SparsePauliOp
 from qiskit.quantum_info import Statevector
 from qiskit import QuantumCircuit
@@ -10,7 +11,7 @@ def create_single_string(op,pair,N):
     temp[pair[0]] = op
     return "".join(temp)
 
-def create_ham_dict(p, ops, J, h, N):
+def heisenberg_model(p, ops, J, h, N):
     ham_dict = dict()
     for a,b in p:
         for op_i in range(len(ops)):
@@ -26,18 +27,55 @@ def ham_as_matrix(H):
         H_tot = H_tot + SparsePauliOp.from_list([(SpinString,H[SpinString])]).to_matrix()
     return H_tot
 
-def create_pairs(nrow, ncol):
+def create_pairs(dim, model_lattice="grid"):
+    if len(dim)==1:
+        n_sites = dim[0]
+    else:
+        nrow =  dim[0]
+        ncol = dim[1]
     pairs = []
-    grid = nx.grid_2d_graph(nrow, ncol)
-    adj_matrix = nx.to_numpy_array(grid)
-    for i in range (0,ncol*nrow):
-        for j in range(i,ncol*nrow):
-            adj_matrix[j,i]=0
+    if model_lattice =="grid":
+        lattice = nx.grid_2d_graph(nrow, ncol)
+        adj_matrix = nx.to_numpy_array(lattice)
+        for i in range (0,ncol*nrow):
+            for j in range(i,ncol*nrow):
+                adj_matrix[j,i]=0
 
-    for i in range(0,nrow*ncol):
-        for j in range(0,nrow*ncol):
-            if adj_matrix[i, j] == 1:
-                pairs.append((i, j))
+        for i in range(0,nrow*ncol):
+            for j in range(0,nrow*ncol):
+                if adj_matrix[i, j] == 1:
+                    pairs.append((i, j))
+        
+    if model_lattice == "triangle":
+        sites = np.arange(.5*n_sites*(n_sites+1), dtype=int)[::-1]
+        lists = []
+        for i in range(1,n_sites+1):
+            lists.append(list(sites[:i:])[::-1])
+            sites = sites[i:]
+        lists = lists[::-1]
+        for i in range(1,n_sites):
+            for j in range(len(lists[i])):
+                pairs.append((lists[i-1][j],lists[i][j]))
+                pairs.append((lists[i-1][j+1],lists[i][j]))
+                pairs.append((lists[i-1][j], lists[i-1][j+1]))
+
+    if model_lattice =="triangular_lattice":
+        sites = np.arange(nrow*ncol, dtype=int)[::-1]
+        lists = []
+        for i in range(0,ncol):
+            lists.append(list(sites[:nrow:])[::-1])
+            sites = sites[nrow:]
+        lists = lists[::-1]
+        print(lists)
+        for i in range(1,nrow):
+            for j in range(len(lists[i])):
+                pairs.append((lists[i-1][j],lists[i][j]))
+                if j != nrow-1:
+                    pairs.append((lists[i-1][j+1],lists[i][j]))
+                    pairs.append((lists[i-1][j], lists[i-1][j+1]))
+                if i == nrow-1 and j != len(lists[i])-1:
+                    pairs.append((lists[i][j], lists[i][j+1]))
+        
     return pairs
 
 
@@ -67,8 +105,8 @@ mag_field = 0.0
 #----------------MAIN------------------
 #--------------------------------------
 
-couple = create_pairs(Nrow, Ncol)
-h_dict = create_ham_dict(couple, interaction, interaction_term, mag_field, Nrow*Ncol)
+couple = create_pairs([Nrow, Ncol], model_lattice = "grid")
+h_dict = heisenberg_model(couple, interaction, interaction_term, mag_field, Nrow*Ncol)
 h_tot = ham_as_matrix(h_dict)
 print(couple)
 print(h_dict)
@@ -76,6 +114,16 @@ print(h_tot)
 #-------NEEL STATE FOR REFERENCE------
 print(neel_ref_en(Nrow*Ncol,h_tot))
 """
-qc = QuantumCircuit(9)
-qc.cx(0,1)
-print(qc.num_nonlocal_gates())
+couple = create_pairs([3,3], model_lattice = "triangular_lattice")
+print(couple)
+exit(0)
+g = nx.from_edgelist(couple)
+plt.figure()
+random_pos = nx.random_layout(g, seed=19)
+pos = nx.spring_layout(g, pos=random_pos)
+nx.draw(g, with_labels = True, pos=pos)
+plt.show()
+print(couple)
+#qc = QuantumCircuit(9)
+#qc.cx(0,1)
+#print(qc.num_nonlocal_gates())
