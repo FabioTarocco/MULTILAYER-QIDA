@@ -114,9 +114,8 @@ print(h_tot)
 #-------NEEL STATE FOR REFERENCE------
 print(neel_ref_en(Nrow*Ncol,h_tot))
 """
-couple = create_pairs([3,3], model_lattice = "triangular_lattice")
+couple = create_pairs([3,4], model_lattice = "grid")
 print(couple)
-exit(0)
 g = nx.from_edgelist(couple)
 plt.figure()
 random_pos = nx.random_layout(g, seed=19)

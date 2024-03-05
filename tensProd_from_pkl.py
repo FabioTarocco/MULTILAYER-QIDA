@@ -38,25 +38,25 @@ def gs_to_tensProd(gs):
     return wf, coeffs
     
 N = 6
-filet = pd.read_pickle("./pickle/gs2x3_dict.pkl")[0]
+filet = pd.read_pickle("./pickle/gs3x5_dict.pkl")[0]
 print(filet)
 
 gs, coeffs = gs_to_tensProd(filet)
 
 
 try:
-    with open("./gs2x3.pkl", 'rb') as file:
+    with open("./gs3x5.pkl", 'rb') as file:
         data = pickle.load(file)
 except FileNotFoundError:
     data = []
 
-with open("./gs2x3.pkl", 'wb') as file:
+with open("./gs3x4.pkl", 'wb') as file:
     pickle.dump(data, file)
 
 new_entry = {'gs':gs, 'coeffs':coeffs, 'gs_dict':filet}
 data.append(new_entry)
 
-with open("./gs2x3.pkl", 'wb') as file:
+with open("./gs3x5.pkl", 'wb') as file:
         pickle.dump(data, file)
 
 
